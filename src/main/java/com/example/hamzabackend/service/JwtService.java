@@ -15,10 +15,22 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final Dotenv dotenv = Dotenv.load();
+    private final Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 
-    private final String jwtSecret = dotenv.get("JWT_SECRET");
-    private final long jwtExpiration = Long.parseLong(dotenv.get("JWT_EXPIRATION"));
+    private final String jwtSecret = getEnvValue("JWT_SECRET");
+    private final long jwtExpiration = Long.parseLong(getEnvValue("JWT_EXPIRATION"));
+
+    private String getEnvValue(String key) {
+        // Try dotenv first, then fall back to system environment variables
+        String value = dotenv.get(key);
+        if (value == null) {
+            value = System.getenv(key);
+        }
+        if (value == null) {
+            throw new RuntimeException("Environment variable " + key + " is not set");
+        }
+        return value;
+    }
 
     private Key getSignKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
