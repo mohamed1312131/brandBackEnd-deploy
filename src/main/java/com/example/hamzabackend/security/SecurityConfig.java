@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",                // auth is public
-                                "/api/health",                 // health check for Railway - FIXED 403 ERROR
+                                "/api/health/**",                 // health check for Railway - FIXED 403 ERROR
                                 "/api/carousels/**",
                                 "/api/newsletter/**",
                                 "/api/notes/**",
