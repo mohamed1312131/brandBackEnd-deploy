@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",                // auth is public
+                                "/api/health",                 // health check for Railway
                                 "/api/carousels/**",
                                 "/api/newsletter/**",
                                 "/api/notes/**",
