@@ -17,13 +17,14 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
-@EnableMethodSecurity // Optional, useful if you later use @PreAuthorize
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    
-    @Value("${cors.allowed.origins:http://localhost:4200,http://localhost:3000}")
+
+    // FIXED: Now matches the Railway environment variable name
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}")
     private String allowedOrigins;
 
     @Bean
@@ -34,14 +35,15 @@ public class SecurityConfig {
                     config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
                     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     config.setAllowedHeaders(List.of("*"));
-                    config.setAllowCredentials(true); // crucial for sending cookies
+                    config.setAllowCredentials(true);
+                    config.setMaxAge(3600L); // Cache preflight for 1 hour
                     return config;
                 }))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/**",                // auth is public
-                                "/api/health/**",                 // health check for Railway - FIXED 403 ERROR
+                                "/api/auth/**",
+                                "/api/health/**",
                                 "/api/carousels/**",
                                 "/api/newsletter/**",
                                 "/api/notes/**",
@@ -51,7 +53,7 @@ public class SecurityConfig {
                                 "/api/website/**",
                                 "/api/contact/**"
                         ).permitAll()
-                        .anyRequest().authenticated()     // everything else requires login
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
