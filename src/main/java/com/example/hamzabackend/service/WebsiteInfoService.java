@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class WebsiteInfoService {
@@ -24,7 +26,7 @@ public class WebsiteInfoService {
         return repository.findAll().stream().findFirst().orElse(null);
     }
 
-    public WebsiteInfo updateInfo(WebsiteInfoRequest request, MultipartFile logo, MultipartFile aboutImage) throws IOException {
+    public WebsiteInfo updateInfo(WebsiteInfoRequest request, MultipartFile logo, MultipartFile aboutImage, List<MultipartFile> instagramImages) throws IOException {
         WebsiteInfo existing = getInfo();
         WebsiteInfo info = existing != null ? existing : new WebsiteInfo();
 
@@ -42,7 +44,6 @@ public class WebsiteInfoService {
         info.getAboutUs().setTitle(request.getAboutUs().getTitle());
         info.getAboutUs().setDescription(request.getAboutUs().getDescription());
 
-        // Handle images
         if (logo != null && !logo.isEmpty()) {
             info.setLogoUrl(cloudinaryService.uploadFile(logo, "website", "image"));
         }
@@ -51,8 +52,20 @@ public class WebsiteInfoService {
             info.getAboutUs().setImageUrl(cloudinaryService.uploadFile(aboutImage, "website", "image"));
         }
 
+        // Handle multiple Instagram images
+        if (instagramImages != null && !instagramImages.isEmpty()) {
+            List<String> urls = new ArrayList<>();
+            for (MultipartFile file : instagramImages) {
+                if (!file.isEmpty()) {
+                    urls.add(cloudinaryService.uploadFile(file, "website/instagram", "image"));
+                }
+            }
+            info.setInstagramUrls(urls);
+        }
+
         return repository.save(info);
     }
+
 
     // Individual Getters
     public String getInstagramUrl() {

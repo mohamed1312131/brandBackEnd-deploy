@@ -7,6 +7,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.*;
 
+import java.util.List;
+
 
 @Document(collection = "website_info")
 @Data
@@ -25,6 +27,7 @@ public class WebsiteInfo {
 
     private AboutUs aboutUs;
     private String logoUrl;
+    private List<String> instagramUrls;
 
     @Data
     @NoArgsConstructor

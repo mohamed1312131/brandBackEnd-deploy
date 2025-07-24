@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RequestPart;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/website")
 // CORS is handled globally in SecurityConfig
@@ -30,16 +33,18 @@ public class WebsiteInfoController {
     public ResponseEntity<WebsiteInfo> updateInfo(
             @RequestPart("info") WebsiteInfoRequest info,
             @RequestPart(value = "logo", required = false) MultipartFile logo,
-            @RequestPart(value = "aboutImage", required = false) MultipartFile aboutImage
+            @RequestPart(value = "aboutImage", required = false) MultipartFile aboutImage,
+            @RequestPart(value = "instagramImages", required = false) List<MultipartFile> instagramImages
     ) {
         try {
-            WebsiteInfo updated = service.updateInfo(info, logo, aboutImage);
+            WebsiteInfo updated = service.updateInfo(info, logo, aboutImage, instagramImages);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
+
     @GetMapping("/instagram")
     public ResponseEntity<String> getInstagramUrl() {
         return ResponseEntity.ok(service.getInstagramUrl());
@@ -74,5 +79,9 @@ public class WebsiteInfoController {
     public ResponseEntity<WebsiteInfo.AboutUs> getAboutUs() {
         return ResponseEntity.ok(service.getAboutUs());
     }
-
+    @GetMapping("/instagram-images")
+    public ResponseEntity<List<String>> getInstagramImages() {
+        WebsiteInfo info = service.getInfo();
+        return ResponseEntity.ok(info != null ? info.getInstagramUrls() : new ArrayList<>());
+    }
 }
