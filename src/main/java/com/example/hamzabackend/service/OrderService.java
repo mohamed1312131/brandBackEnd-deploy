@@ -2,7 +2,11 @@ package com.example.hamzabackend.service;
 
 import com.example.hamzabackend.entity.*;
 import com.example.hamzabackend.repository.*;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +24,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private static final List<String> VALID_STATUSES = List.of("PENDING", "PROCESSING", "COMPLETED", "CANCELLED");
+    private final JavaMailSender mailSender;
     /**
      * Save the checkout (order) submitted by user.
      */
@@ -39,19 +44,96 @@ public class OrderService {
             }
 
             Product product = optionalProduct.get();
-            item.setProductName(product.getTitle()); // populate product name
+            item.setProductName(product.getTitle());
             total += product.getPrice() * item.getQuantity();
-
         }
 
         checkout.setOrderId(generateOrderId());
         checkout.setTotal(total);
-        checkout.setGrandTotal(total + 5.0); // Add delivery cost if needed
+        checkout.setGrandTotal(total + 5.0);
         checkout.setStatus("PENDING");
         checkout.setCreatedAt(Instant.now());
         checkout.setDelivered(false);
 
-        return checkoutRepository.save(checkout);
+        Checkout saved = checkoutRepository.save(checkout);
+        sendOrderConfirmationEmail(saved);
+
+        return saved;
+    }
+
+    private void sendOrderConfirmationEmail(Checkout checkout) {
+        if (checkout.getEmail() == null || checkout.getEmail().isEmpty()) return;
+
+        StringBuilder productList = new StringBuilder();
+        for (Checkout.OrderedProduct item : checkout.getProducts()) {
+            productList.append("<li>")
+                    .append(item.getProductName())
+                    .append(" - Size: ")
+                    .append(item.getSize())
+                    .append(" - Qty: ")
+                    .append(item.getQuantity())
+                    .append("</li>");
+        }
+
+        String html = String.format("""
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\">
+  <style>
+    body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .container { max-width: 600px; margin: auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
+    .header { padding: 40px 30px 10px; text-align: center; }
+    .header img { max-width: 120px; border-radius: 6px; }
+    .subtitle { text-transform: uppercase; font-size: 12px; color: #999; margin-top: 20px; }
+    .title { font-size: 24px; font-weight: bold; color: #111; margin: 10px 0; }
+    .content { padding: 0 30px 30px; color: #333; font-size: 15px; line-height: 1.6; }
+    .cta-button { display: inline-block; background-color: #111; color: #fff !important; padding: 14px 26px; text-decoration: none; border-radius: 6px; margin-top: 30px; }
+    .footer { text-align: center; font-size: 12px; color: #aaa; padding: 20px; }
+    ul { padding-left: 1rem; }
+  </style>
+</head>
+<body>
+  <div class=\"container\">
+    <div class=\"header\">
+      <img src=\"https://yourdomain.com/logo.png\" alt=\"Brand Logo\" />
+      <div class=\"subtitle\">Merci pour votre commande</div>
+      <div class=\"title\">Commande %s</div>
+    </div>
+    <div class=\"content\">
+      <p>Bonjour,</p>
+      <p>Nous avons bien reçu votre commande <strong>%s</strong>. Voici un résumé de votre achat :</p>
+      <ul>%s</ul>
+      <p><strong>Total:</strong> %.2f TND</p>
+      <p>Nous vous contacterons bientôt au <strong>%s</strong> pour confirmer la livraison.</p>
+      <a class=\"cta-button\" href=\"https://yourdomain.com/orders/%s\">Voir ma commande</a>
+    </div>
+    <div class=\"footer\">
+      &copy; %d Votre Boutique. Tous droits réservés.
+    </div>
+  </div>
+</body>
+</html>
+""",
+                checkout.getOrderId(),
+                checkout.getOrderId(),
+                productList,
+                checkout.getGrandTotal(),
+                checkout.getPhone(),
+                checkout.getId(),
+                Calendar.getInstance().get(Calendar.YEAR)
+        );
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(checkout.getEmail());
+            helper.setSubject("Confirmation de commande - " + checkout.getOrderId());
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
     }
     public List<Checkout> getAllOrders() {
         return checkoutRepository.findAll();
