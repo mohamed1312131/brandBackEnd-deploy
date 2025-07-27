@@ -1,6 +1,5 @@
 package com.example.hamzabackend.service;
 
-
 import com.example.hamzabackend.DTO.WebsiteInfoRequest;
 import com.example.hamzabackend.entity.WebsiteInfo;
 import com.example.hamzabackend.repository.WebsiteInfoRepository;
@@ -30,29 +29,36 @@ public class WebsiteInfoService {
         WebsiteInfo existing = getInfo();
         WebsiteInfo info = existing != null ? existing : new WebsiteInfo();
 
-        // Set text fields
+        // Set basic fields
         info.setInstagramUrl(request.getInstagramUrl());
+        info.setFacebookUrl(request.getFacebookUrl());
+        info.setYoutubeUrl(request.getYoutubeUrl());
+        info.setPinterestUrl(request.getPinterestUrl());
+        info.setThreadsUrl(request.getThreadsUrl());
+
         info.setPhone(request.getPhone());
         info.setEmail(request.getEmail());
         info.setLocation(request.getLocation());
         info.setDescription(request.getDescription());
 
+        // About Us block
         if (info.getAboutUs() == null) {
             info.setAboutUs(new WebsiteInfo.AboutUs());
         }
-
         info.getAboutUs().setTitle(request.getAboutUs().getTitle());
         info.getAboutUs().setDescription(request.getAboutUs().getDescription());
 
+        // Upload logo if provided
         if (logo != null && !logo.isEmpty()) {
             info.setLogoUrl(cloudinaryService.uploadFile(logo, "website", "image"));
         }
 
+        // Upload About image if provided
         if (aboutImage != null && !aboutImage.isEmpty()) {
             info.getAboutUs().setImageUrl(cloudinaryService.uploadFile(aboutImage, "website", "image"));
         }
 
-        // Handle multiple Instagram images
+        // Upload Instagram images
         if (instagramImages != null && !instagramImages.isEmpty()) {
             List<String> urls = new ArrayList<>();
             for (MultipartFile file : instagramImages) {
@@ -66,11 +72,30 @@ public class WebsiteInfoService {
         return repository.save(info);
     }
 
-
     // Individual Getters
     public String getInstagramUrl() {
         WebsiteInfo info = getInfo();
         return info != null ? info.getInstagramUrl() : null;
+    }
+
+    public String getFacebookUrl() {
+        WebsiteInfo info = getInfo();
+        return info != null ? info.getFacebookUrl() : null;
+    }
+
+    public String getYoutubeUrl() {
+        WebsiteInfo info = getInfo();
+        return info != null ? info.getYoutubeUrl() : null;
+    }
+
+    public String getPinterestUrl() {
+        WebsiteInfo info = getInfo();
+        return info != null ? info.getPinterestUrl() : null;
+    }
+
+    public String getThreadsUrl() {
+        WebsiteInfo info = getInfo();
+        return info != null ? info.getThreadsUrl() : null;
     }
 
     public String getPhone() {

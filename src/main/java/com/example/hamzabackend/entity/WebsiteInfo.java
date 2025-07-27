@@ -28,6 +28,10 @@ public class WebsiteInfo {
     private AboutUs aboutUs;
     private String logoUrl;
     private List<String> instagramUrls;
+    private String facebookUrl;
+private String youtubeUrl;
+private String pinterestUrl;
+private String threadsUrl;
 
     @Data
     @NoArgsConstructor

@@ -84,4 +84,24 @@ public class WebsiteInfoController {
         WebsiteInfo info = service.getInfo();
         return ResponseEntity.ok(info != null ? info.getInstagramUrls() : new ArrayList<>());
     }
+    @GetMapping("/facebook")
+public ResponseEntity<String> getFacebookUrl() {
+    return ResponseEntity.ok(service.getInfo().getFacebookUrl());
+}
+
+@GetMapping("/youtube")
+public ResponseEntity<String> getYoutubeUrl() {
+    return ResponseEntity.ok(service.getInfo().getYoutubeUrl());
+}
+
+@GetMapping("/pinterest")
+public ResponseEntity<String> getPinterestUrl() {
+    return ResponseEntity.ok(service.getInfo().getPinterestUrl());
+}
+
+@GetMapping("/threads")
+public ResponseEntity<String> getThreadsUrl() {
+    return ResponseEntity.ok(service.getInfo().getThreadsUrl());
+}
+
 }
