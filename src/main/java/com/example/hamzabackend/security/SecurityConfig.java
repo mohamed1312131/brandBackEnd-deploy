@@ -24,7 +24,7 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
 
     // FIXED: Now matches the Railway environment variable name
-    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}")
+    @Value("${cors.allowed.origins:http://localhost:4200,http://localhost:3000,https://www.edityam.com,https://admin.edityam.com,https://frontadminui-deploy-production.up.railway.app}")
     private String allowedOrigins;
 
     @Bean
