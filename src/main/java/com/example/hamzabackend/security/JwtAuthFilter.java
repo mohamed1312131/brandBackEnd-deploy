@@ -44,16 +44,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         if (token != null) {
-            email = jwtService.extractEmail(token);
+            try {
+                email = jwtService.extractEmail(token);
+            } catch (Exception e) {
+                // ✅ Invalid token, but continue - let Spring Security handle it
+                // Don't throw exception, just continue without authentication
+            }
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            Admin admin = adminRepository.findByEmail(email).orElse(null);
-            if (admin != null && jwtService.isTokenValid(token, admin)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()); // ✅ add roles/permissions
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            try {
+                Admin admin = adminRepository.findByEmail(email).orElse(null);
+                if (admin != null && jwtService.isTokenValid(token, admin)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                // ✅ If token validation fails, continue without authentication
+                // Let Spring Security's permitAll() handle public endpoints
             }
         }
 
