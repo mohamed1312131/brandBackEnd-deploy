@@ -31,50 +31,66 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        System.out.println("🔍 Processing request: " + path); // Debug log
+        System.out.println("🔍 Processing request: " + path);
 
-        String token = null;
-        String email = null;
+        try {
+            String token = null;
+            String email = null;
 
-        // ✅ Read JWT token from "token" cookie
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("token".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    System.out.println("🍪 Found token cookie"); // Debug log
-                    break;
+            // ✅ Read JWT token from "token" cookie
+            if (request.getCookies() != null) {
+                System.out.println("🍪 Checking cookies...");
+                for (Cookie cookie : request.getCookies()) {
+                    if ("token".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        System.out.println("🍪 Found token cookie");
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("🚫 No cookies found");
+            }
+
+            if (token != null) {
+                try {
+                    System.out.println("📧 Attempting to extract email from token...");
+                    email = jwtService.extractEmail(token);
+                    System.out.println("📧 Extracted email: " + email);
+                } catch (Exception e) {
+                    System.out.println("❌ Token extraction failed: " + e.getMessage());
+                    e.printStackTrace(); // Print full stack trace for debugging
+                }
+            } else {
+                System.out.println("🚫 No token found - continuing without auth");
+            }
+
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                try {
+                    System.out.println("🔐 Attempting to authenticate user: " + email);
+                    Admin admin = adminRepository.findByEmail(email).orElse(null);
+                    if (admin != null && jwtService.isTokenValid(token, admin)) {
+                        System.out.println("✅ Token is valid, setting authentication");
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    } else {
+                        System.out.println("❌ Invalid token or admin not found");
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Authentication failed: " + e.getMessage());
+                    e.printStackTrace(); // Print full stack trace for debugging
                 }
             }
+
+            System.out.println("✅ Continuing to filter chain for: " + path);
+            filterChain.doFilter(request, response);
+            System.out.println("✅ Filter chain completed for: " + path);
+
+        } catch (Exception e) {
+            System.out.println("💥 CRITICAL ERROR in JWT Filter: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Re-throw to see where it's coming from
         }
-
-        if (token != null) {
-            try {
-                email = jwtService.extractEmail(token);
-                System.out.println("📧 Extracted email: " + email); // Debug log
-            } catch (Exception e) {
-                System.out.println("❌ Token extraction failed: " + e.getMessage()); // Debug log
-            }
-        } else {
-            System.out.println("🚫 No token found - continuing without auth"); // Debug log
-        }
-
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                Admin admin = adminRepository.findByEmail(email).orElse(null);
-                if (admin != null && jwtService.isTokenValid(token, admin)) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-            } catch (Exception e) {
-                // ✅ If token validation fails, continue without authentication
-                // Let Spring Security's permitAll() handle public endpoints
-            }
-        }
-        System.out.println("✅ Continuing to filter chain"); // Debug log
-
-
-        filterChain.doFilter(request, response);
     }
 }
