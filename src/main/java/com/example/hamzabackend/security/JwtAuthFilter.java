@@ -30,6 +30,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        System.out.println("🔍 Processing request: " + path); // Debug log
+
         String token = null;
         String email = null;
 
@@ -38,6 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             for (Cookie cookie : request.getCookies()) {
                 if ("token".equals(cookie.getName())) {
                     token = cookie.getValue();
+                    System.out.println("🍪 Found token cookie"); // Debug log
                     break;
                 }
             }
@@ -46,10 +50,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 email = jwtService.extractEmail(token);
+                System.out.println("📧 Extracted email: " + email); // Debug log
             } catch (Exception e) {
-                // ✅ Invalid token, but continue - let Spring Security handle it
-                // Don't throw exception, just continue without authentication
+                System.out.println("❌ Token extraction failed: " + e.getMessage()); // Debug log
             }
+        } else {
+            System.out.println("🚫 No token found - continuing without auth"); // Debug log
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -66,6 +72,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // Let Spring Security's permitAll() handle public endpoints
             }
         }
+        System.out.println("✅ Continuing to filter chain"); // Debug log
+
 
         filterChain.doFilter(request, response);
     }
