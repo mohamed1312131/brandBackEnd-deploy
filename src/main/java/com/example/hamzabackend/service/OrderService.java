@@ -50,7 +50,7 @@ public class OrderService {
 
         checkout.setOrderId(generateOrderId());
         checkout.setTotal(total);
-        checkout.setGrandTotal(total + 5.0);
+        checkout.setGrandTotal(total + 8.0);
         checkout.setStatus("PENDING");
         checkout.setCreatedAt(Instant.now());
         checkout.setDelivered(false);
@@ -70,7 +70,7 @@ public class OrderService {
         }
 
         String baseUrl = "https://www.edityam.com";
-        String logoUrl = baseUrl + "/images/logo.png";
+        String logoUrl = "https://res.cloudinary.com/electoro/image/upload/v1753019444/planandexercise/website/hamzalogo_5d734d83-d50c-4b8b-b551-46f0398e33f4.jpg";
         String orderViewUrl = baseUrl + "/orders/" + checkout.getOrderId(); // or wherever your frontend shows the order
 
         // Build product list HTML
@@ -158,8 +158,8 @@ public class OrderService {
             </p>
         </div>
         <div class="footer">
-            <p>&copy; %d YourBrand. All rights reserved.</p>
-            <p>123 Fashion Street, Tunis, Tunisia</p>
+            <p>&copy; %d editYam.com. All rights reserved.</p>
+            <p>Residence opera Garden la marsa, Tunis Tunisia</p>
         </div>
     </div>
 </body>
@@ -181,7 +181,7 @@ public class OrderService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(checkout.getEmail());
-            helper.setFrom("no-reply@yourbrand.com");
+            helper.setFrom("no-reply@edityam.com");
             helper.setSubject("Your Order Confirmation: " + checkout.getOrderId());
             helper.setText(htmlTemplate, true);
             mailSender.send(message);
@@ -238,7 +238,7 @@ public class OrderService {
         }
 
         cart.setTotal(total);
-        cart.setGrandTotal(total + 5); // optional delivery fee
+        cart.setGrandTotal(total + 8); // optional delivery fee
 
         return cartRepository.save(cart);
     }
