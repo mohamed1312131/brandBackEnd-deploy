@@ -238,6 +238,7 @@ public class ProductService {
         product.setTitle(dto.getTitle());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
+        product.setSizeGuide(dto.getSizeGuide()); // 👈
         product.setOldPrice(dto.getOldPrice());
         product.setAdditionalInfo(dto.getAdditionalInfo());
         product.setSizeGuide(dto.getSizeGuide());
