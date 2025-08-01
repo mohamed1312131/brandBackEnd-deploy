@@ -65,21 +65,15 @@ public class OrderService {
 
     private void sendOrderConfirmationEmail(Checkout checkout) {
         if (checkout.getEmail() == null || checkout.getEmail().isEmpty()) {
-            // Log this or handle it, but don't proceed without an email address
             System.err.println("Skipping order confirmation email: No email address for order " + checkout.getOrderId());
             return;
         }
 
-        // --- Configuration ---
-        // IMPORTANT: Replace this with your application's public domain/IP address.
-        // This must be accessible from the internet for the logo to appear in emails.
-        // For local testing: "http://localhost:8080" (if your app runs on port 8080)
-        // For production: "https://www.yourbrand.com"
         String baseUrl = "https://www.edityam.com";
         String logoUrl = baseUrl + "/images/logo.png";
+        String orderViewUrl = baseUrl + "/orders/" + checkout.getOrderId(); // or wherever your frontend shows the order
 
-
-        // --- Build Product List ---
+        // Build product list HTML
         StringBuilder productListHtml = new StringBuilder();
         for (Checkout.OrderedProduct item : checkout.getProducts()) {
             productListHtml.append(String.format("""
@@ -91,10 +85,10 @@ public class OrderService {
               <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; text-align: right;">%d</td>
               <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; text-align: right;">%.2f TND</td>
             </tr>
-        """, item.getProductName(), item.getSize(), item.getQuantity()));
+        """, item.getProductName(), item.getSize(), item.getQuantity(), item.getQuantity() * checkout.getTotal() / checkout.getProducts().stream().mapToInt(Checkout.OrderedProduct::getQuantity).sum()));
         }
 
-        // --- Main Email Template ---
+        // Main HTML template
         String htmlTemplate = String.format("""
 <!DOCTYPE html>
 <html lang="en">
@@ -128,9 +122,9 @@ public class OrderService {
             <h1>Your Order is Confirmed!</h1>
             <p>Hi %s,</p>
             <p>Thank you for your purchase. We've received your order and are getting it ready for shipment. You will be contacted soon at <strong>%s</strong> to confirm delivery details.</p>
-            
+
             <h3 style="color: #111111;">Order #%s</h3>
-            
+
             <table class="order-details">
                 <thead>
                     <tr>
@@ -143,7 +137,7 @@ public class OrderService {
                     %s
                 </tbody>
             </table>
-            
+
             <table class="summary-table">
                 <tr>
                     <td>Subtotal</td>
@@ -158,7 +152,7 @@ public class OrderService {
                     <td class="total" style="text-align: right;">%.2f TND</td>
                 </tr>
             </table>
-            
+
             <p style="text-align: center;">
                 <a href="%s" class="cta-button">View Your Order</a>
             </p>
@@ -172,13 +166,14 @@ public class OrderService {
 </html>
 """,
                 logoUrl,
-                checkout.getFirstName(), // Assuming you have a 'getFirstName()' on your Checkout object
-                checkout.getPhone(),
+                Optional.ofNullable(checkout.getFirstName()).orElse("Customer"),
+                Optional.ofNullable(checkout.getPhone()).orElse("N/A"),
                 checkout.getOrderId(),
                 productListHtml.toString(),
                 checkout.getTotal(),
-                (checkout.getGrandTotal() - checkout.getTotal()), // Shipping cost calculation
+                checkout.getGrandTotal() - checkout.getTotal(),
                 checkout.getGrandTotal(),
+                orderViewUrl,
                 Calendar.getInstance().get(Calendar.YEAR)
         );
 
@@ -186,15 +181,16 @@ public class OrderService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(checkout.getEmail());
-            helper.setFrom("no-reply@yourbrand.com"); // It's good practice to set a 'from' address
+            helper.setFrom("no-reply@yourbrand.com");
             helper.setSubject("Your Order Confirmation: " + checkout.getOrderId());
             helper.setText(htmlTemplate, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            // It's better to use a logger here in a real application
+            System.err.println("Error sending order confirmation email: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
     public List<Checkout> getAllOrders() {
         return checkoutRepository.findAll();
     }
