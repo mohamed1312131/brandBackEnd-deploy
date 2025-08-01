@@ -61,66 +61,124 @@ public class OrderService {
         return saved;
     }
 
-    private void sendOrderConfirmationEmail(Checkout checkout) {
-        if (checkout.getEmail() == null || checkout.getEmail().isEmpty()) return;
+// In OrderService.java
 
-        StringBuilder productList = new StringBuilder();
-        for (Checkout.OrderedProduct item : checkout.getProducts()) {
-            productList.append("<li>")
-                    .append(item.getProductName())
-                    .append(" - Size: ")
-                    .append(item.getSize())
-                    .append(" - Qty: ")
-                    .append(item.getQuantity())
-                    .append("</li>");
+    private void sendOrderConfirmationEmail(Checkout checkout) {
+        if (checkout.getEmail() == null || checkout.getEmail().isEmpty()) {
+            // Log this or handle it, but don't proceed without an email address
+            System.err.println("Skipping order confirmation email: No email address for order " + checkout.getOrderId());
+            return;
         }
 
-        String html = String.format("""
+        // --- Configuration ---
+        // IMPORTANT: Replace this with your application's public domain/IP address.
+        // This must be accessible from the internet for the logo to appear in emails.
+        // For local testing: "http://localhost:8080" (if your app runs on port 8080)
+        // For production: "https://www.yourbrand.com"
+        String baseUrl = "https://www.edityam.com";
+        String logoUrl = baseUrl + "/images/logo.png";
+
+
+        // --- Build Product List ---
+        StringBuilder productListHtml = new StringBuilder();
+        for (Checkout.OrderedProduct item : checkout.getProducts()) {
+            productListHtml.append(String.format("""
+            <tr>
+              <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee;">
+                <span style="font-weight: bold;">%s</span><br>
+                <span style="color: #666666; font-size: 14px;">Size: %s</span>
+              </td>
+              <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; text-align: right;">%d</td>
+              <td style="padding: 15px 0; border-bottom: 1px solid #eeeeee; text-align: right;">%.2f TND</td>
+            </tr>
+        """, item.getProductName(), item.getSize(), item.getQuantity()));
+        }
+
+        // --- Main Email Template ---
+        String htmlTemplate = String.format("""
 <!DOCTYPE html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-  <meta charset=\"UTF-8\">
-  <style>
-    body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-    .container { max-width: 600px; margin: auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05); }
-    .header { padding: 40px 30px 10px; text-align: center; }
-    .header img { max-width: 120px; border-radius: 6px; }
-    .subtitle { text-transform: uppercase; font-size: 12px; color: #999; margin-top: 20px; }
-    .title { font-size: 24px; font-weight: bold; color: #111; margin: 10px 0; }
-    .content { padding: 0 30px 30px; color: #333; font-size: 15px; line-height: 1.6; }
-    .cta-button { display: inline-block; background-color: #111; color: #fff !important; padding: 14px 26px; text-decoration: none; border-radius: 6px; margin-top: 30px; }
-    .footer { text-align: center; font-size: 12px; color: #aaa; padding: 20px; }
-    ul { padding-left: 1rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .header { background-color: #111111; color: #ffffff; padding: 20px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+        .header img { max-width: 150px; }
+        .content { padding: 30px; color: #333333; line-height: 1.6; }
+        .content h1 { color: #111111; font-size: 24px; }
+        .order-details { width: 100%%; border-collapse: collapse; margin: 20px 0; }
+        .order-details th { background-color: #f9f9f9; padding: 10px; text-align: left; border-bottom: 1px solid #dddddd; }
+        .summary { margin-top: 30px; padding-top: 20px; border-top: 2px solid #eeeeee; }
+        .summary-table { width: 100%%; }
+        .summary-table td { padding: 5px 0; }
+        .total { font-weight: bold; font-size: 18px; color: #111111; }
+        .cta-button { display: inline-block; background-color: #111111; color: #ffffff !important; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; margin-top: 20px; }
+        .footer { text-align: center; font-size: 12px; color: #888888; padding: 20px; }
+    </style>
 </head>
 <body>
-  <div class=\"container\">
-    <div class=\"header\">
-      <img src=\"https://yourdomain.com/logo.png\" alt=\"Brand Logo\" />
-      <div class=\"subtitle\">Merci pour votre commande</div>
-      <div class=\"title\">Commande %s</div>
+    <div class="container">
+        <div class="header">
+            <img src="%s" alt="Brand Logo">
+        </div>
+        <div class="content">
+            <h1>Your Order is Confirmed!</h1>
+            <p>Hi %s,</p>
+            <p>Thank you for your purchase. We've received your order and are getting it ready for shipment. You will be contacted soon at <strong>%s</strong> to confirm delivery details.</p>
+            
+            <h3 style="color: #111111;">Order #%s</h3>
+            
+            <table class="order-details">
+                <thead>
+                    <tr>
+                        <th style="width: 60%%;">Item</th>
+                        <th style="text-align: right;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    %s
+                </tbody>
+            </table>
+            
+            <table class="summary-table">
+                <tr>
+                    <td>Subtotal</td>
+                    <td style="text-align: right;">%.2f TND</td>
+                </tr>
+                <tr>
+                    <td>Shipping</td>
+                    <td style="text-align: right;">%.2f TND</td>
+                </tr>
+                <tr>
+                    <td class="total">Grand Total</td>
+                    <td class="total" style="text-align: right;">%.2f TND</td>
+                </tr>
+            </table>
+            
+            <p style="text-align: center;">
+                <a href="%s" class="cta-button">View Your Order</a>
+            </p>
+        </div>
+        <div class="footer">
+            <p>&copy; %d YourBrand. All rights reserved.</p>
+            <p>123 Fashion Street, Tunis, Tunisia</p>
+        </div>
     </div>
-    <div class=\"content\">
-      <p>Bonjour,</p>
-      <p>Nous avons bien reçu votre commande <strong>%s</strong>. Voici un résumé de votre achat :</p>
-      <ul>%s</ul>
-      <p><strong>Total:</strong> %.2f TND</p>
-      <p>Nous vous contacterons bientôt au <strong>%s</strong> pour confirmer la livraison.</p>
-      <a class=\"cta-button\" href=\"https://yourdomain.com/orders/%s\">Voir ma commande</a>
-    </div>
-    <div class=\"footer\">
-      &copy; %d Votre Boutique. Tous droits réservés.
-    </div>
-  </div>
 </body>
 </html>
 """,
-                checkout.getOrderId(),
-                checkout.getOrderId(),
-                productList,
-                checkout.getGrandTotal(),
+                logoUrl,
+                checkout.getFirstName(), // Assuming you have a 'getFirstName()' on your Checkout object
                 checkout.getPhone(),
-                checkout.getId(),
+                checkout.getOrderId(),
+                productListHtml.toString(),
+                checkout.getTotal(),
+                (checkout.getGrandTotal() - checkout.getTotal()), // Shipping cost calculation
+                checkout.getGrandTotal(),
                 Calendar.getInstance().get(Calendar.YEAR)
         );
 
@@ -128,10 +186,12 @@ public class OrderService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(checkout.getEmail());
-            helper.setSubject("Confirmation de commande - " + checkout.getOrderId());
-            helper.setText(html, true);
+            helper.setFrom("no-reply@yourbrand.com"); // It's good practice to set a 'from' address
+            helper.setSubject("Your Order Confirmation: " + checkout.getOrderId());
+            helper.setText(htmlTemplate, true);
             mailSender.send(message);
         } catch (MessagingException e) {
+            // It's better to use a logger here in a real application
             e.printStackTrace();
         }
     }
