@@ -15,11 +15,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
-// CORS is handled globally in SecurityConfig
 public class ProductController {
 
     private final ProductService productService;
 
+    // ... createProduct, uploadVariant, and other GET methods remain the same ...
     @PostMapping("/create")
     public ResponseEntity<Product> createProduct(@RequestBody ProductDetailsDTO dto) {
         Product product = productService.createProduct(dto);
@@ -30,12 +30,11 @@ public class ProductController {
     public ResponseEntity<ProductVariant> uploadVariant(
             @PathVariable String productId,
             @RequestPart("variant") ProductVariantUploadDTO variantDTO,
-            @RequestPart(name = "images", required = false) MultipartFile[] images  // ✅ important fix
+            @RequestPart(name = "images", required = false) MultipartFile[] images
     ) {
         ProductVariant createdVariant = productService.addVariantToProduct(productId, variantDTO, images != null ? images : new MultipartFile[0]);
         return ResponseEntity.ok(createdVariant);
     }
-
 
     @GetMapping("/getAllCat")
     public ResponseEntity<List<ProductCategory>> getAllCategories() {
@@ -51,32 +50,31 @@ public class ProductController {
         ProductDetailsResponseDTO dto = productService.getProductDetails(id);
         return ResponseEntity.ok(dto);
     }
-    @PutMapping("/{id}")
+
+    // ===================================================================
+    // ✨ START: REPLACEMENT FOR BOTH OLD UPDATE METHODS
+    // ===================================================================
+
+    /**
+     * Handles updating a product's details and optionally its size guide image.
+     * This single endpoint correctly consumes multipart/form-data from the Angular client.
+     */
+    @PutMapping(value = "/{id}", consumes = { "multipart/form-data" })
     public ResponseEntity<Product> updateProduct(
             @PathVariable String id,
-            @RequestBody ProductDetailsDTO dto
-    ) {
-        Product updated = productService.updateProduct(id, dto);
-        return ResponseEntity.ok(updated);
-    }
-
-    @PutMapping(value = "/{id}/with-size-guide", consumes = { "multipart/form-data" })
-    public ResponseEntity<Product> updateProductWithSizeGuide(
-            @PathVariable String id,
-            @RequestPart("product") ProductDetailsDTO dto,
+            @RequestPart("productData") ProductDetailsDTO dto, // ✅ Matches the key from Angular
             @RequestPart(name = "sizeGuideImage", required = false) MultipartFile sizeGuideImage
     ) {
+        // The existing service method already handles this logic perfectly.
         Product updated = productService.updateProduct(id, dto, sizeGuideImage);
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * Update an existing variant:
-     *  - change color
-     *  - update sizes
-     *  - remove old images
-     *  - upload new images (optional)
-     */
+    // ===================================================================
+    // ✨ END: REPLACEMENT
+    // ===================================================================
+
+
     @PutMapping(value = "/{productId}/variant/{variantId}", consumes = { "multipart/form-data" })
     public ResponseEntity<ProductVariant> updateVariant(
             @PathVariable String productId,
@@ -89,6 +87,8 @@ public class ProductController {
         );
         return ResponseEntity.ok(updatedVariant);
     }
+
+    // ... delete methods and other endpoints remain the same ...
     @DeleteMapping("/{productId}/variant/{variantId}")
     public ResponseEntity<Void> deleteVariant(
             @PathVariable String productId,
@@ -107,12 +107,4 @@ public class ProductController {
     public ResponseEntity<List<ProductListDTO>> getLatestProducts() {
         return ResponseEntity.ok(productService.getLatestProducts(6));
     }
-
-
-
-
-
-
-
-
 }
