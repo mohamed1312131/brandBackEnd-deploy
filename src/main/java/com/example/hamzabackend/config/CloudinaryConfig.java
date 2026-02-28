@@ -11,9 +11,9 @@ public class CloudinaryConfig {
     @Bean
     public Cloudinary cloudinary() {
         return new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "electoro",
-                "api_key", "395233879161639",
-                "api_secret", "-58R9fG20HDhoRopSFnHdqmwXqo",
+                "cloud_name", "dkvgbsvbz",
+                "api_key", "462672441514126",
+                "api_secret", "tMklR2LUQ1OkVd5xhrDuQkXgKRQ",
                 "secure", true
         ));
     }
