@@ -19,6 +19,15 @@ public class Note {
     private String title;
     private String description;
     private boolean status = true;
+    // Null on notes created before these settings existed; read as SHOP / LEFT.
+    private ButtonType buttonType;
+    private String buttonText;
+    private String buttonUrl;
+    private ImagePosition imagePosition;
     @CreatedDate
     private Instant createdAt;
+
+    public enum ButtonType { SHOP, INQUIRY, CUSTOM, NONE }
+
+    public enum ImagePosition { LEFT, RIGHT }
 }

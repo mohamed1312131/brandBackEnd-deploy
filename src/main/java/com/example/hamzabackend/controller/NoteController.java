@@ -24,10 +24,15 @@ public class NoteController {
     public ResponseEntity<Note> createNote(
             @RequestParam String title,
             @RequestParam String description,
-            @RequestParam MultipartFile image
+            @RequestParam MultipartFile image,
+            @RequestParam(required = false) String buttonType,
+            @RequestParam(required = false) String buttonText,
+            @RequestParam(required = false) String buttonUrl,
+            @RequestParam(required = false) String imagePosition
     ) {
         try {
-            Note note = noteService.createNote(title, description, image);
+            Note note = noteService.createNote(title, description, image,
+                    new NoteService.ButtonSettings(buttonType, buttonText, buttonUrl, imagePosition));
             return ResponseEntity.ok(note);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body(null);
@@ -70,10 +75,15 @@ public class NoteController {
             @PathVariable String id,
             @RequestParam String title,
             @RequestParam String description,
-            @RequestParam(value = "image", required = false) MultipartFile image
+            @RequestParam(value = "image", required = false) MultipartFile image,
+            @RequestParam(required = false) String buttonType,
+            @RequestParam(required = false) String buttonText,
+            @RequestParam(required = false) String buttonUrl,
+            @RequestParam(required = false) String imagePosition
     ) {
         try {
-            Note updatedNote = noteService.updateNote(id, title, description, image);
+            Note updatedNote = noteService.updateNote(id, title, description, image,
+                    new NoteService.ButtonSettings(buttonType, buttonText, buttonUrl, imagePosition));
             return ResponseEntity.ok(updatedNote);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
