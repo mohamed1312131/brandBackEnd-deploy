@@ -3,6 +3,7 @@ package com.example.hamzabackend.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -39,6 +40,9 @@ public class SecurityConfig {
                                 "/api/website/**",
                                 "/api/contact/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/inquiries").permitAll()
+                        // Without this, a 400/404 from a public endpoint is forwarded to /error and masked as 403.
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
